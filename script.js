@@ -1,61 +1,91 @@
-const dvdLogo = document.querySelector(".dvd-logo");
-const container = document.querySelector(".container");
-const celebration = document.querySelector(".celebration");
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById("dvdCanvas");
+  const ctx = canvas.getContext("2d");
 
-let x = Math.random() * (container.clientWidth - dvdLogo.clientWidth);
-let y = Math.random() * (container.clientHeight - dvdLogo.clientHeight);
-let xSpeed = 2;
-let ySpeed = 2;
-let cornerHit = false;
+  const img = new Image();
+  img.src = "dvd_logo.svg";
+  
+  img.onload = () => {
+    updateDimensions();
+    animate();
+  };
 
-function getRandomColor() {
-    const letters = '0123456789ABCDEF';
-    let color = '#';
-    for (let i = 0; i < 6; i++) {
-        color += letters[Math.floor(Math.random() * 16)];
-    }
-    return color;
+  let logoWidth;
+  let logoHeight;
+  let x = 50;
+  let y = 50;
+  let xSpeed = 2;
+  let ySpeed = 2;
+  let tintColor = randomColor();
+
+  function updateDimensions() {
+  const viewport = window.visualViewport;
+  canvas.width = viewport.width;
+  canvas.height = viewport.height;
+  logoWidth = canvas.width * 0.25;
+  logoHeight = (logoWidth * img.height) / img.width;
+
+  // Check if the current x and y positions place the logo outside the canvas bounds
+  if (x + logoWidth > canvas.width) {
+    x = canvas.width - logoWidth;
+  }
+  if (y + logoHeight > canvas.height) {
+    y = canvas.height - logoHeight;
+  }
+
+  // Update x and y speed
+  const speedScale = 0.002; // Adjust this value to control the speed scaling factor
+  const avgCanvasSize = (canvas.width + canvas.height) / 2;
+  const speed = avgCanvasSize * speedScale;
+  xSpeed = Math.sign(xSpeed) * speed;
+  ySpeed = Math.sign(ySpeed) * speed;
 }
 
-function changeLogoColor() {
-    const logoPath = document.querySelector('.logo-path');
-    logoPath.setAttribute('fill', getRandomColor());
+function randomColor() {
+  const r = Math.floor(Math.random() * 256);
+  const g = Math.floor(Math.random() * 256);
+  const b = Math.floor(Math.random() * 256);
+  return `rgb(${r}, ${g}, ${b})`;
 }
+  function changeTintColor() {
+    tintColor = randomColor();
+  }
 
-function animate() {
+
+  function animate() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
     x += xSpeed;
     y += ySpeed;
 
-    let edgeHit = false;
+    let hitEdge = false;
 
-    if (x < 0 || x > container.clientWidth - dvdLogo.clientWidth) {
-        xSpeed = -xSpeed;
-        edgeHit = true;
-        cornerHit = x <= 0 && y <= 0 || x >= container.clientWidth - dvdLogo.clientWidth && y <= 0 || x <= 0 && y >= container.clientHeight - dvdLogo.clientHeight || x >= container.clientWidth - dvdLogo.clientWidth && y >= container.clientHeight - dvdLogo.clientHeight;
+    if (x < 0 || x > canvas.width - logoWidth) {
+      xSpeed = -xSpeed;
+      hitEdge = true;
     }
-    if (y < 0 || y > container.clientHeight - dvdLogo.clientHeight) {
-        ySpeed = -ySpeed;
-        edgeHit = true;
-        cornerHit = x <= 0 && y <= 0 || x >= container.clientWidth - dvdLogo.clientWidth && y <= 0 || x <= 0 && y >= container.clientHeight - dvdLogo.clientHeight || x >= container.clientWidth - dvdLogo.clientWidth && y >= container.clientHeight - dvdLogo.clientHeight;
+    if (y < 0 || y > canvas.height - logoHeight) {
+      ySpeed = -ySpeed;
+      hitEdge = true;
     }
 
-    if (edgeHit) {
-        changeLogoColor();
+    if (hitEdge) {
+      changeTintColor();
     }
 
-    if (cornerHit) {
-        celebrate();
-    }
+    ctx.drawImage(img, x, y, logoWidth, logoHeight);
 
-    dvdLogo.style.left = x + "px";
-    dvdLogo.style.top = y + "px";
+    // Apply the tint color
+    ctx.globalCompositeOperation = 'source-atop';
+    ctx.fillStyle = tintColor;
+    ctx.fillRect(x, y, logoWidth, logoHeight);
+
+    // Reset the globalCompositeOperation to the default mode
+    ctx.globalCompositeOperation = 'source-over';
 
     requestAnimationFrame(animate);
-}
+  }
 
-function celebrate() {
-    cornerHit = false;
-    celebration.style.display = "block";
-}
+  window.addEventListener("resize", updateDimensions);
+});
 
-animate();
